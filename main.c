@@ -43,8 +43,7 @@ if(argc>5) //jesli jest wiecej niż 4
     return 1;
 }
 
-
-printf("%d\n",czas);
+float czas;
 
 printf("Dziwne rzeczy\n");
 
@@ -92,12 +91,10 @@ else
     /* code */
 czas=5;
 printf("%f ",czas);
-if(argc==4)
+if(argc==4)  //działa :D
 {
-    czas = 3;//(float)*argv[2]; //zle zmienia
+    czas=atof(argv[3]);
     printf("%f\n ",czas);
-   
-    
 }
 sleep(czas);
 syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
