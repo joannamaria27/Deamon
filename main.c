@@ -27,8 +27,6 @@ bool is_file(const char* path) {
 
 volatile int sygnal = 1;
 
-int czas = 5; //*60 = 5minut - zmienić!!!
-
 int main(int argc, char **argv)  
 {
 
@@ -38,7 +36,12 @@ if(argc<1 ) // dod arg by zmienic
 	    return 1;
 
     }
-
+	
+if(argc>5) //jesli jest wiecej niż 4
+{
+    printf("za duzo argumnetów\n ");
+    return 1;
+}
 
 
 printf("%d\n",czas);
@@ -50,8 +53,6 @@ printf("Dziwne rzeczy\n");
 //if(is_dir(argv[1]) == true) //sciezka zr nie jest katalogiem
 if(is_file(argv[1]) == true)
 {
-
-
     printf("Scieżka zródłowa nie jest katalogiem\n");
     return -1;
 
@@ -59,8 +60,6 @@ if(is_file(argv[1]) == true)
 //if(is_dir(argv[2]) == true)  //sciezka docel nie jest katalogiem
 if(is_file(argv[2]) == true)
 {
-
-
     printf("Scieżka docelowa nie jest katalogiem\n");
     return -1;
 
@@ -78,26 +77,32 @@ void handler(int signum)
     
 }
 signal(SIGQUIT, handler);
-int czyObudzonyPrzezPrzycisk=0;
-//if(SIGUSR1 || sleep(czas))
+
 if(sygnal==0)
 {
     czas = 0;
-   
+    //nie działa log
     printf("Dem0n budzi się\n");
+    sleep(czas);
     syslog (LOG_NOTICE, "Demon został obudzony poprzez przycisk\n");
-   // closelog ();   //zamkniecie logu
+    closelog ();   //zamkniecie logu
 }
 else
 {
-    //działa zawsze :c :c :c
-    syslog (LOG_NOTICE, "Demon został obudzony po 5 minutach\n");
-  //  closelog (); 
+    /* code */
+czas=5;
+printf("%f ",czas);
+if(argc==4)
+{
+    czas = 3;//(float)*argv[2]; //zle zmienia
+    printf("%f\n ",czas);
+   
+    
 }
-
 sleep(czas);
-
-
+syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
+closelog (); 
+}
 
 // while (1) 
 // { 
