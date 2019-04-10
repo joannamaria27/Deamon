@@ -25,45 +25,60 @@ bool is_file(const char* path) {
     return S_ISREG(buf.st_mode);
 }
 
-typedef struct node {
-    int val;
-    struct node * next;
-} node_t;
-
-//dodawanie na koniec
-void push(node_t * head, int val) 
+typedef struct Lista
 {
-    node_t * current = head;
-    while (current->next != NULL) 
-    {
-        current = current->next;
-    }
-    /* now we can add a new variable */
-    current->next = malloc(sizeof(node_t));
-    current->next->val = val;
-    current->next->next = NULL;
-}
-void printL(node_t *current) 
+    char nazwaPliku[100];
+    struct nazwaPliku* next;
+} Lista;
+/*
+// dodaje nowy wezel do listy
+void dodaj(Lista** lista, Lista* nowa)
 {
-    while (current != NULL)
-    {
-        printf("> %d\n", current->val);
-        current = current->next;
-    }
+     nowa->next=NULL;
+
+     if((*lista)==NULL)
+     {
+      *lista = nowa;
+                     }
+     else
+     {
+        Lista* wsk = *lista;
+        while(wsk->next != NULL)
+        {
+        wsk = wsk->next;
+
+        }
+        wsk->next = nowa;
+
+        }
+     }              
+
+// dodaje plik do listy              
+void dodajOsobe(Lista** lista)
+{    
+    char line[500];
+    Lista* nowa = (Lista*)malloc(sizeof(Lista));
+
+
+    printf("Podaj imie: ");
+    scanf("%s", nowa->nazwaPliku);
+
+
+    dodaj(lista, nowa);     
 }
-
-
+*/
 volatile int sygnal = 1;
 
 int main(int argc, char **argv)  
 {
-    if(argc<1 ) // dod arg by zmienic
+    if(argc<=1 ) // dod arg by zmienic
     {
-        printf ("błąd: %s ", strerror (errno)); 
+        //printf ("błąd: %s ", strerror (errno)); 
+        printf("za mało argumnetów\n ");
 	    return 1;
     }
 	
-    if(argc>5) //jesli jest wiecej niż 4
+    if(argc>5) //jesli jest wiecej niż 3 arg
     {
         printf("za duzo argumnetów\n ");
         return 1;
@@ -74,63 +89,48 @@ int main(int argc, char **argv)
     if((is_dir(argv[2]) == false) && (is_dir(argv[1]) == false))
     {
         printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
-        return -1;
+      //  return -1;
     }
     if(is_dir(argv[1]) == false)
     {
         printf("Scieżka zródłowa nie jest katalogiem\n");
-        return -1;  
+       // return -1;  
     }
     if(is_dir(argv[2]) == false)
     {
         printf("Scieżka docelowa nie jest katalogiem\n");
-        return -1;
+        // return -1;
     }
+   
     printf("Oba żródła są katalogami\n");
-
-
-    //lista plików zrodlowych
-    node_t *current = malloc(sizeof(node_t));
-    current->val = 123; //zminic na pierwszy plik
-    current->next = NULL;
-
-    push(current, 12); //dodawanie pliku nie liczby
-    push(current, 58);
-    push(current, 99);
-
-    printL(current);
-
-
 
     setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
 
     void handler(int signum)
     {
-    //printf("signal!\n");
+        printf("signal!\n");
         sygnal=0;
     }
-    signal(SIGQUIT, handler);
+    signal(SIGUSR1, handler);
 
     if(sygnal==0)
     {
         czas = 0;
-    //nie działa log
+        //nie działa log
         printf("Dem0n budzi się\n");
         sleep(czas);
-        syslog (LOG_NOTICE, "Demon został obudzony poprzez przycisk\n");
-        closelog ();   //zamkniecie logu
+        syslog (LOG_NOTICE, "Demon został obudzony poprzez sygnal\n");
     }
     else
     {
-    /* code */
         czas=5;
-        printf("%f ",czas);
         if(argc==4)  //działa :D
         {
             czas=atof(argv[3]);
             printf("%f\n ",czas);
         }   
+        printf("%f \n",czas);
         sleep(czas);
         syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
         closelog (); 
@@ -142,35 +142,33 @@ int main(int argc, char **argv)
         pid_t p;
         p=fork();
     
-        if (p < 0) //obsługa błędóœ pid
+        if (p < 0) //obsługa błędów pid
         {
             exit(EXIT_FAILURE);
         }
         if(p==0)
         {
-
-    
             execvp("firefox", argv);
             printf("Dziaaaaaała\n");
             //sleep(10);
 
-/*
-    char plikZr, plikDoc;
     //najpierw przejscie przez pliki i jesli:
+//while(plikiZ)
+//{
+   // char pz=(char)plikiZ;
+          //  if(is_file(plikiZ)==true)
+          //  {
+              //  if(plikiZ==plikiD) //nazwa taka sama???????
+             //   {
+                    
+             //   }
+             //   else if (  )//data sie nie zgadza
+             //   {
 
-            if(is_file(plikZr)==true)
-    {
-                if(plikZr==plikDoc)) //nazwa taka sama???????
-        {
-//hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
-        }
-                else if (  )//data sie nie zgadza
-                {
-
-                }
-                else
-                {
-            //brak pliku w fiolderze docelowym
+             //   }
+               // else
+                //{
+            //brak pliku w folderze docelowym
             //kopiowanie pliku do katalogu docelowego (open,read)
 
             //działa ale nie czysci na koniec bufora
@@ -181,7 +179,10 @@ int main(int argc, char **argv)
 	                    printf ("błąd: %s ", strerror (errno)); 
 		                return 1;
 	                }
-      
+                    int plikD; 
+	                plikD = open(argv[2], O_CREAT | O_RDWR  ,777); //zamiast argv - kolejny el listy
+                    //czy potrzeba obsługi błędów??
+                    int ileZapis=0;
                     int ileOdcz=0;
 
                     char buffor[200];
@@ -189,44 +190,34 @@ int main(int argc, char **argv)
                     {   
                         memset(buffor,0,sizeof(buffor));
                         ileOdcz=read(plik,buffor,sizeof(buffor));
-           
                         printf("%s", buffor);
-                        //printf("\n");
-                        int plikD; 
-	                    plikD = open(argv[2], O_CREAT | O_RDWR  ,777); //zamiast argv - kolejny el listy
-                        int ileZapis=0;
-                        ileZapis=0;
+                       // ileZapis=0;
                         printf("\n");
                         ileZapis=write(plikD,buffor,sizeof(buffor));
                         printf("%s", buffor);
-                        close(plikD);
                     }
                     while(ileOdcz>=197);
                     close(plik);
+                    close(plikD);
         
-//zamiast wyswietlania - kopiowanie
+                    //zamiast wyswietlania - kopiowanie
 
-//zmienić jeszcze to co sie zapisuje
-         syslog (LOG_NOTICE, "plik został skopiowany\n");
-closelog();
-
+                    //zmienić jeszcze to co sie zapisuje
+                    syslog (LOG_NOTICE, "plik został skopiowany\n");
+            
+            
         }
 
 
-    }
-
-*/
 
 
-    }
-         
-    sleep(5);
-// }
+      // plikiZ=plikiZ->next;
+    
+    
 
+    closelog ();   //zamkniecie logu
 
-closelog ();   //zamkniecie logu
-
-exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 
 
 }
