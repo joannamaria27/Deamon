@@ -25,6 +25,34 @@ bool is_file(const char* path) {
     return S_ISREG(buf.st_mode);
 }
 
+typedef struct node {
+    int val;
+    struct node * next;
+} node_t;
+
+//dodawanie na koniec
+void push(node_t * head, int val) 
+{
+    node_t * current = head;
+    while (current->next != NULL) 
+    {
+        current = current->next;
+    }
+    /* now we can add a new variable */
+    current->next = malloc(sizeof(node_t));
+    current->next->val = val;
+    current->next->next = NULL;
+}
+void printL(node_t *current) 
+{
+    while (current != NULL)
+    {
+        printf("> %d\n", current->val);
+        current = current->next;
+    }
+}
+
+
 volatile int sygnal = 1;
 
 int main(int argc, char **argv)  
@@ -61,6 +89,19 @@ int main(int argc, char **argv)
     printf("Oba żródła są katalogami\n");
 
 
+    //lista plików zrodlowych
+    node_t *current = malloc(sizeof(node_t));
+    current->val = 123; //zminic na pierwszy plik
+    current->next = NULL;
+
+    push(current, 12); //dodawanie pliku nie liczby
+    push(current, 58);
+    push(current, 99);
+
+    printL(current);
+
+
+
     setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
 
@@ -83,7 +124,7 @@ int main(int argc, char **argv)
     else
     {
     /* code */
-    czas=5;
+        czas=5;
     printf("%f ",czas);
     if(argc==4)  //działa :D
     {
