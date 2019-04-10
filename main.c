@@ -125,15 +125,15 @@ int main(int argc, char **argv)
     {
     /* code */
         czas=5;
-    printf("%f ",czas);
-    if(argc==4)  //działa :D
-    {
-        czas=atof(argv[3]);
-        printf("%f\n ",czas);
-    }   
-    sleep(czas);
-    syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
-    closelog (); 
+        printf("%f ",czas);
+        if(argc==4)  //działa :D
+        {
+            czas=atof(argv[3]);
+            printf("%f\n ",czas);
+        }   
+        sleep(czas);
+        syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
+        closelog (); 
     }
 
 //  while (1) 
