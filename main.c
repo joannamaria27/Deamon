@@ -48,20 +48,20 @@ float czas;
 printf("Dziwne rzeczy\n");
 
 
-//chyba nie działa/
-//if(is_dir(argv[1]) == true) //sciezka zr nie jest katalogiem
-if(is_file(argv[1]) == true)
+if((is_dir(argv[2]) == false) && (is_dir(argv[1]) == false))
+{
+    printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
+    return -1;
+}
+if(is_dir(argv[1]) == false)
 {
     printf("Scieżka zródłowa nie jest katalogiem\n");
     return -1;
-
 }
-//if(is_dir(argv[2]) == true)  //sciezka docel nie jest katalogiem
-if(is_file(argv[2]) == true)
+if(is_dir(argv[2]) == false)
 {
     printf("Scieżka docelowa nie jest katalogiem\n");
     return -1;
-
 }
 printf("Oba żródła są katalogami\n");
 
