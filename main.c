@@ -25,48 +25,59 @@ bool is_file(const char* path) {
     return S_ISREG(buf.st_mode);
 }
 
-typedef struct Lista
+
+typedef struct Pliki
 {
-    char nazwaPliku[100];
-    struct nazwaPliku* next;
-} Lista;
-/*
-// dodaje nowy wezel do listy
-void dodaj(Lista** lista, Lista* nowa)
+    char *nazwaPliku;
+    //typ, data, rozmiar
+    struct Pliki * nastepny;
+}Pliki;
+
+void dodawanie(Pliki ** glowa, char nazwa[])
 {
-     nowa->next=NULL;
-
-     if((*lista)==NULL)
-     {
-      *lista = nowa;
-                     }
-     else
-     {
-        Lista* wsk = *lista;
-        while(wsk->next != NULL)
-        {
-        wsk = wsk->next;
-
-        }
-        wsk->next = nowa;
-
-        }
-     }              
-
-// dodaje plik do listy              
-void dodajOsobe(Lista** lista)
-{    
-    char line[500];
-    Lista* nowa = (Lista*)malloc(sizeof(Lista));
-
-
-    printf("Podaj imie: ");
-    scanf("%s", nowa->nazwaPliku);
-
-
-    dodaj(lista, nowa);     
+    Pliki *p,*e;
+    e->nastepny=NULL;
+    e->nazwaPliku=nazwa;
+    p=*glowa;
+    if(p!=NULL)
+    {
+        while(p->nastepny!=NULL)
+            p=p->nastepny;
+        p->nastepny=e;        
+    }
+    else
+    {
+        *glowa=e;
+    }   
 }
-*/
+
+void kopiowanie (char plikZ, char plikD)
+{
+    int plikZrodlowy = open(plikZ,O_RDONLY);  //zamiast argv - kolejny el listy
+	if(plikZ<0)
+	{
+	    printf ("błąd: %s ", strerror (errno)); 
+	    exit(1);
+    }
+    int plikDocelowy = open(plikD, O_CREAT | O_RDWR  ,777); //zamiast argv - kolejny el listy
+    //czy potrzeba obsługi błędów??
+    int ileZapis=0;
+    int ileOdcz=0;
+    char buffor[200];
+    do
+    {   
+        memset(buffor,0,sizeof(buffor));
+        ileOdcz=read(plikZ,buffor,sizeof(buffor));
+        printf("%s", buffor);
+        printf("\n");
+        ileZapis=write(plikD,buffor,sizeof(buffor));
+        printf("%s", buffor);
+    }
+    while(ileOdcz>=197);
+    close(plikZ);
+    close(plikD);
+}            
+
 volatile int sygnal = 1;
 
 int main(int argc, char **argv)  
@@ -148,72 +159,26 @@ int main(int argc, char **argv)
         }
         if(p==0)
         {
-            execvp("firefox", argv);
+            //execvp("firefox", argv);
             printf("Dziaaaaaała\n");
-            //sleep(10);
+            sleep(10);
 
-    //najpierw przejscie przez pliki i jesli:
-//while(plikiZ)
-//{
-   // char pz=(char)plikiZ;
-          //  if(is_file(plikiZ)==true)
-          //  {
-              //  if(plikiZ==plikiD) //nazwa taka sama???????
-             //   {
-                    
-             //   }
-             //   else if (  )//data sie nie zgadza
-             //   {
-
-             //   }
-               // else
-                //{
+ 
             //brak pliku w folderze docelowym
             //kopiowanie pliku do katalogu docelowego (open,read)
 
             //działa ale nie czysci na koniec bufora
-                    int plik; 
-	                plik = open(argv[1],O_RDONLY);  //zamiast argv - kolejny el listy
-	                if(plik<0)
-	                {
-	                    printf ("błąd: %s ", strerror (errno)); 
-		                return 1;
-	                }
-                    int plikD; 
-	                plikD = open(argv[2], O_CREAT | O_RDWR  ,777); //zamiast argv - kolejny el listy
-                    //czy potrzeba obsługi błędów??
-                    int ileZapis=0;
-                    int ileOdcz=0;
-
-                    char buffor[200];
-                    do
-                    {   
-                        memset(buffor,0,sizeof(buffor));
-                        ileOdcz=read(plik,buffor,sizeof(buffor));
-                        printf("%s", buffor);
-                       // ileZapis=0;
-                        printf("\n");
-                        ileZapis=write(plikD,buffor,sizeof(buffor));
-                        printf("%s", buffor);
-                    }
-                    while(ileOdcz>=197);
-                    close(plik);
-                    close(plikD);
+                   // kopiowanie(argv[1],argv[2]);
         
                     //zamiast wyswietlania - kopiowanie
 
                     //zmienić jeszcze to co sie zapisuje
-                    syslog (LOG_NOTICE, "plik został skopiowany\n");
+                    syslog(LOG_NOTICE, "plik został skopiowany\n");
             
             
         }
 
-
-
-
       // plikiZ=plikiZ->next;
-    
-    
 
     closelog ();   //zamkniecie logu
 
