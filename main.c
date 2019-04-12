@@ -14,6 +14,7 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 #include <time.h>
+#include <utime.h>
 
 bool is_dir(const char* path) {
     struct stat buf;
