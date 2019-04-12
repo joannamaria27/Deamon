@@ -138,6 +138,22 @@ bool czas_modyfikacji (char *plikZ, char* plikD)
     
 }
 
+void zmiana_daty(char *plikZ, char *plikD)
+{
+    struct stat filestat;
+    struct utimbuf nowa_data; // to specify new access and modification times for a file
+    
+    stat(plikZ, &filestat);
+    
+    nowa_data.actime = ctime(&filestat.st_atime);
+    nowa_data.modtime = ctime(&filestat.st_mtime);
+    
+    utime(plikD, &nowa_data);   // zmienia czas dostepu i modyfikacji pliku
+    chmod(plikD, filestat.st_mode);
+
+}
+
+
 volatile int sygnal = 1;
 
 int main(int argc, char **argv)  
