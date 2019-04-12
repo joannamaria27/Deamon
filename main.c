@@ -13,6 +13,7 @@
 #include <sys/syslog.h>
 #include <sys/mman.h>
 #include <stdbool.h>
+#include <time.h>
 
 bool is_dir(const char* path) {
     struct stat buf;
@@ -133,7 +134,7 @@ bool czas_modyfikacji (char *plikZ, char* plikD)
     stat(plikZ, &filestatZ);
     stat(plikD, &filestatD);
     
-    return ((&filestatZ.st_mtime) < (&filestatD.st_mtime));
+    return ((&filestatZ.st_mtime) < (&filestatD.st_mtime)); //albo return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
     
 }
 
