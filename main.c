@@ -78,6 +78,55 @@ void kopiowanie (char plikZ, char plikD)
     close(plikD);
 }            
 
+void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
+    
+    int plikZ, plikD;
+    char *zr, *doc;
+    //struct stat s;
+    size_t rozmiarPliku;
+
+    /* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset);
+    start - określa adres, w którym chcemy widzieć odwzorowanie pliku. Nie jest wymagane i nie zawsze jest przestrzegane
+    przez system operacyjny.
+    length - liczba bajtów jaką chcemy odwzorować w pamięci.
+    prot - flagi określające uprawnienia jakie chcemy nadać obszarowi pamięci, np. tylko do odczytu, etc.
+    flags - dodatkowe flagi określające sposób działania wywołania mmap.
+    fd - deskryptor pliku, który chcemy odwzorować w pamięci.
+    offset - liczba określająca od którego miejsca w pliku chcemy rozpocząć odwzorowywanie.*/
+
+    plikZ = open(sciezkaZ, O_RDONLY);
+    
+    if(sciezkaZ<0)
+	{
+	    printf ("błąd: %s ", strerror (errno)); 
+	    exit(1);
+   	}
+    rozmiarPliku = sys_lseek(plikZ, 0, SEEK_END);
+    zr = mmap(NULL, rozmiarPliku, PROT_READ, MAP_PRIVATE, plikZ, 0);
+
+    plikD = open(sciezkaD, O_RDWR | O_CREAT, 777);
+    ftruncate(plikD, rozmiarPliku);
+    doc = mmap(NULL, rozmiarPliku, PROT_READ | PROT_WRITE, MAP_SHARED, plikD, 0);
+
+    /*mmap, munmap - mapowanie lub usunięcie mapowania plików lub urządzeń w pamięci
+
+    memcpy (void* dest, const void* src, size_t size);
+    dest - wskaźnik do obiektu docelowego.
+    src - wskaźnik do obiektu źródłowego.
+    size - liczba bajtów do skopiowania.
+
+    munmap(void *start, size_t length);*/
+
+    /* Kopiowanie */
+    memcpy(doc, zr, rozmiarPliku);
+    munmap(zr, rozmiarPliku);
+    munmap(doc, rozmiarPliku);
+
+    close(plikZ);
+    close(plikD);
+}
+
+
 volatile int sygnal = 1;
 
 int main(int argc, char **argv)  
