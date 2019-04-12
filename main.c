@@ -125,6 +125,17 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     close(plikD);
 }
 
+bool czas_modyfikacji (char *plikZ, char* plikD)
+{
+    struct stat filestatZ;
+    struct stat filestatD;
+    
+    stat(plikZ, &filestatZ);
+    stat(plikD, &filestatD);
+    
+    return ((&filestatZ.st_mtime) < (&filestatD.st_mtime));
+    
+}
 
 volatile int sygnal = 1;
 
