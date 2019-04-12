@@ -135,7 +135,7 @@ bool czas_modyfikacji (char *plikZ, char* plikD)
     stat(plikZ, &filestatZ);
     stat(plikD, &filestatD);
     
-    return ((ctime(&filestatZ.st_mtime)) < (ctime(&filestatD.st_mtime))); //albo return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
+     return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
     
 }
 
@@ -146,14 +146,13 @@ void zmiana_daty(char *plikZ, char *plikD)
     
     stat(plikZ, &filestat);
     
-    nowa_data.actime = ctime(&filestat.st_atime);
-    nowa_data.modtime = ctime(&filestat.st_mtime);
+    nowa_data.actime = filestat.st_atim.tv_sec;
+    nowa_data.modtime = filestat.st_mtim.tv_sec;
     
     utime(plikD, &nowa_data);   // zmienia czas dostepu i modyfikacji pliku
     chmod(plikD, filestat.st_mode);
 
 }
-
 
 volatile int sygnal = 1;
 
