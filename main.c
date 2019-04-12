@@ -134,7 +134,7 @@ bool czas_modyfikacji (char *plikZ, char* plikD)
     stat(plikZ, &filestatZ);
     stat(plikD, &filestatD);
     
-    return ((&filestatZ.st_mtime) < (&filestatD.st_mtime)); //albo return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
+    return ((ctime(&filestatZ.st_mtime)) < (ctime(&filestatD.st_mtime))); //albo return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
     
 }
 
