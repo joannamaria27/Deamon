@@ -117,7 +117,6 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
 
     munmap(void *start, size_t length);*/
 
-    /* Kopiowanie */
     memcpy(doc, zr, rozmiarPliku);
     munmap(zr, rozmiarPliku);
     munmap(doc, rozmiarPliku);
