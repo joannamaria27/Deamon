@@ -176,7 +176,7 @@ void zmiana_daty(char *plikZ, char *plikD)
 
 volatile int sygnal = 1;
 
-int main(int argc, char **argv)  
+int demon(int argc, char **argv)  
 {
     if(argc<=1 ) // dod arg by zmienic
     {
@@ -259,7 +259,50 @@ char * ar1;
     {
         printf("Bład otwarcia podanej scieżki zrodlowej\n");
         exit(1);
-    }  
+    } 
+	
+	
+	//wypisanie listy
+printf("-------------------------------------------------\n");
+wypisz_liste(plikiZr);
+printf("-------------------------------------------------\n");
+wypisz_liste(plikiDoc);
+
+// signal(SIGUSR1, ignor);//ignoruje demona
+
+Pliki * plikiZrKopia;
+Pliki * plikiDocKopia;
+plikiZrKopia = plikiZr->nastepny;
+plikiDocKopia = plikiDoc->nastepny;
+int sk=0;
+
+
+    while(plikiZr!=NULL)
+    {   
+        plikiDoc=plikiDocKopia;
+        sk=0;        
+        while((plikiDoc!=NULL) && (sk==0))
+        {             
+            if(strcmp(plikiZr->nazwaPliku,plikiDoc->nazwaPliku)==0)
+            {
+                if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)!=0)
+                {
+                    char sc6[50];
+                    char sc7[50];
+                    strcpy(sc6,argv[1]);
+                    strcat(sc6,"/");
+                    strcat(sc6,plikiZr->nazwaPliku);
+                    strcpy(sc7,argv[2]);
+                    strcat(sc7,"/");
+                    strcat(sc7,plikiDoc->nazwaPliku);                    
+                    kopiowaie(sc6,sc7);
+                    zmiana_daty(sc6,sc7);
+                    sk=1;
+                    //break;
+                }                                
+            } 
+            else
+            {
 
 
     if(sygnal==0)
