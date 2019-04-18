@@ -220,6 +220,47 @@ int main(int argc, char **argv)
         sygnal=0;
     }
     signal(SIGUSR1, handler);
+	
+	 struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
+    DIR * sciezkaZ; //reprezentuje strumień sciezki
+    struct dirent *plikD;
+    DIR * sciezkaD;
+
+char sc[50];
+char t[ 100 ] = "";
+char * ar2;
+char * ar1;
+
+//pliki zrodlowe
+    if((sciezkaZ = opendir (argv[1]))!=NULL) //otwiera strumień do katalogu
+    {        
+        while((plikZ = readdir (sciezkaZ))!=NULL)  //zwraca wskaznik do struktury reprez. plik
+        {
+            strcpy(sc,argv[1]);
+            strcat(sc,"/");
+            ar1=strcat(sc,plikZ->d_name);
+            struct stat sb;
+            stat(ar1, &sb);
+            strftime(t, 100, "%d/%m/%Y %H:%M:%S", localtime( &sb.st_mtime));
+            if (!S_ISREG(sb.st_mode)) 
+            {
+
+                continue;
+            } 
+            else
+            {
+                dodawanie(&plikiZr, plikZ->d_name, t);
+            }
+            
+        }
+        closedir(sciezkaZ); //zamyka strumien sciezki
+    }
+    else
+    {
+        printf("Bład otwarcia podanej scieżki zrodlowej\n");
+        exit(1);
+    }  
+
 
     if(sygnal==0)
     {
