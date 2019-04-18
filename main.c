@@ -30,16 +30,23 @@ bool is_file(const char* path) {
 
 typedef struct Pliki
 {
-    char *nazwaPliku;
-    //typ, data, rozmiar
+    char nazwaPliku[60];
+    //char *typPliku;
+    char dataPliku[60];
+   // float rozmiarPliku;
     struct Pliki * nastepny;
 }Pliki;
 
-void dodawanie(Pliki ** glowa, char nazwa[])
+
+void dodawanie(Pliki ** glowa, char nazwa[], char data[])//, char typ[]), float rozmiar)
 {
     Pliki *p,*e;
+    e=(Pliki*)calloc(1,sizeof(Pliki));
     e->nastepny=NULL;
-    e->nazwaPliku=nazwa;
+    strcpy(e->nazwaPliku,nazwa);
+    strcpy(e->dataPliku,data);
+    //e->typPliku=typ;
+    //e->rozmiarPliku=rozmiar;
     p=*glowa;
     if(p!=NULL)
     {
@@ -48,38 +55,51 @@ void dodawanie(Pliki ** glowa, char nazwa[])
         p->nastepny=e;        
     }
     else
-    {
         *glowa=e;
-    }   
 }
 
-void kopiowanie (char plikZ, char plikD)
+void wypisz_liste(Pliki* lista)
 {
-    int plikZrodlowy = open(plikZ,O_RDONLY);  //zamiast argv - kolejny el listy
+
+     Pliki* wsk = lista;
+
+     if(lista == NULL)
+     printf("LISTA JEST PUSTA");
+     else
+     {
+     int i = 1;
+     while( wsk != NULL)
+     {
+            printf("%d %s %s \n", i, wsk->nazwaPliku, wsk->dataPliku);
+            wsk=wsk->nastepny;
+            i++;
+     }
+     }
+}
+
+void kopiowaie(char * plikZrodlowy, char * plikDocelowy)
+{
+    int plikZ = open(plikZrodlowy,O_RDONLY); 
+    int plikD = open(plikDocelowy, O_CREAT |O_TRUNC| O_RDWR  ,777);
 	if(plikZ<0)
 	{
-	    printf ("błąd: %s ", strerror (errno)); 
-	    exit(1);
+	    printf ("błąd: "); 
+        exit(0);
     }
-    int plikDocelowy = open(plikD, O_CREAT | O_RDWR  ,777); //zamiast argv - kolejny el listy
-    //czy potrzeba obsługi błędów??
-    int ileZapis=0;
     int ileOdcz=0;
+    int ileZapis=0;
     char buffor[200];
     do
     {   
         memset(buffor,0,sizeof(buffor));
-        ileOdcz=read(plikZ,buffor,sizeof(buffor));
-        printf("%s", buffor);
-        printf("\n");
-        ileZapis=write(plikD,buffor,sizeof(buffor));
-        printf("%s", buffor);
+        ileOdcz=read(plikZ,buffor,sizeof(buffor));    
     }
     while(ileOdcz>=197);
     close(plikZ);
+    ileZapis=write(plikD,buffor,ileOdcz);
     close(plikD);
-}            
-
+    syslog(LOG_INFO,"plik %s został skopiowany poprzez mapowanie",plikZrodlowy);
+}
 void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     
     int plikZ, plikD;
