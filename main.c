@@ -15,64 +15,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <utime.h>
+#include <assert.h>
 
-int CzyKatalog(char* path)
-{
-    struct stat info;       
-    if((stat(path, &info)) < 0)
-        return -1;
-    else 
-        return info.st_mode;
-}
-
-typedef struct Pliki
-{
-    char nazwaPliku[60];
-    //char *typPliku;
-    char dataPliku[60];
-   // float rozmiarPliku;
-    struct Pliki * nastepny;
-}Pliki;
-
-
-void dodawanie(Pliki ** glowa, char nazwa[], char data[])//, char typ[]), float rozmiar)
-{
-    Pliki *p,*e;
-    e=(Pliki*)calloc(1,sizeof(Pliki));
-    e->nastepny=NULL;
-    strcpy(e->nazwaPliku,nazwa);
-    strcpy(e->dataPliku,data);
-    //e->typPliku=typ;
-    //e->rozmiarPliku=rozmiar;
-    p=*glowa;
-    if(p!=NULL)
-    {
-        while(p->nastepny!=NULL)
-            p=p->nastepny;
-        p->nastepny=e;        
-    }
-    else
-        *glowa=e;
-}
-
-void wypisz_liste(Pliki* lista)
-{
-
-     Pliki* wsk = lista;
-
-     if(lista == NULL)
-     printf("LISTA JEST PUSTA");
-     else
-     {
-     int i = 1;
-     while( wsk != NULL)
-     {
-            printf("%d %s %s \n", i, wsk->nazwaPliku, wsk->dataPliku);
-            wsk=wsk->nastepny;
-            i++;
-     }
-     }
-}
 
 void kopiowaie(char * plikZrodlowy, char * plikDocelowy)
 {
@@ -97,6 +41,7 @@ void kopiowaie(char * plikZrodlowy, char * plikDocelowy)
     close(plikD);
     syslog(LOG_INFO,"plik %s został skopiowany poprzez mapowanie",plikZrodlowy);
 }
+
 void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     
     int plikZ, plikD;
@@ -144,16 +89,59 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     close(plikD);
 }
 
-bool czas_modyfikacji (char *plikZ, char* plikD)
+int CzyKatalog(char* path)
 {
-    struct stat filestatZ;
-    struct stat filestatD;
-    
-    stat(plikZ, &filestatZ);
-    stat(plikD, &filestatD);
-    
-     return (filestatZ.st_mtim.tv_sec < filestatD.st_mtim.tv_sec);
-    
+    struct stat info;       
+    if((stat(path, &info)) < 0)
+        return -1;
+    else 
+        return info.st_mode;
+}
+
+
+typedef struct Pliki
+{
+    char nazwaPliku[60];
+    char dataPliku[60];
+    float rozmiarPliku;
+    struct Pliki * nastepny;
+}Pliki;
+
+void dodawanie(Pliki ** glowa, char nazwa[], char data[], float rozmiar)
+{
+    Pliki *p,*e;
+    e=(Pliki*)calloc(1,sizeof(Pliki));
+    e->nastepny=NULL;
+    strcpy(e->nazwaPliku,nazwa);
+    strcpy(e->dataPliku,data);
+    e->rozmiarPliku=rozmiar;
+    p=*glowa;
+    if(p!=NULL)
+    {
+        while(p->nastepny!=NULL)
+            p=p->nastepny;
+        p->nastepny=e;        
+    }
+    else
+        *glowa=e;
+}
+
+void wypiszListe(Pliki* lista)
+{
+    Pliki* wsk = lista;
+
+    if(lista == NULL)
+        printf("LISTA JEST PUSTA");
+    else
+    {
+        int i = 1;
+        while( wsk != NULL)
+        {
+            printf("%d %s %s %f \n", i, wsk->nazwaPliku, wsk->dataPliku, wsk->rozmiarPliku);
+            wsk=wsk->nastepny;
+            i++;
+        }
+    }
 }
 
 bool czyIstnieje(Pliki * pZr, char * nazwaP)
@@ -180,7 +168,6 @@ void zmiana_daty(char *plikZ, char *plikD)
     struct utimbuf nowa_data; // to specify new access and modification times for a file
     
     stat(plikZ, &filestat);
-    
    // nowa_data.actime = filestat.st_atim.tv_sec;
    // nowa_data.modtime = filestat.st_mtim.tv_sec;
     nowa_data.modtime = filestat.st_mtime;
@@ -212,8 +199,6 @@ int demon(int argc, char **argv)
         return 1;
     }
 
-    float czas;
-
     if((is_dir(argv[2]) == false) && (is_dir(argv[1]) == false))
     {
         printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
@@ -229,6 +214,8 @@ int demon(int argc, char **argv)
         printf("Scieżka docelowa nie jest katalogiem\n");
         return -1;
     }
+	
+		
    
     printf("Oba żródła są katalogami\n");
 
