@@ -222,6 +222,12 @@ int demon(int argc, char **argv)
     setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
 
+	
+    Pliki *plikiZr;
+    Pliki *plikiDoc;
+    plikiZr=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
+    plikiDoc=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
+	
     signal(SIGUSR1, handler);
 	
     struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
@@ -263,6 +269,36 @@ char * ar1;
         printf("Bład otwarcia podanej scieżki zrodlowej\n");
         exit(1);
     } 
+	
+char sc2[50];
+//pliki docelowe
+    if((sciezkaD = opendir (argv[2]))!=NULL)
+    {        
+        while((plikD = readdir (sciezkaD))!=NULL)
+        {            
+            strcpy(sc2,argv[2]);
+            strcat(sc2,"/");
+            ar2 =strcat(sc2,plikD->d_name);
+            struct stat sb;
+            stat(ar2, &sb);
+            rozmiar=sb.st_size;
+            strftime(t, 100, "%d/%m/%Y %H:%M:%S", localtime( &sb.st_mtime));
+            if (!S_ISREG(sb.st_mode)) 
+            {
+
+            } 
+            else
+            {
+                dodawanie(&plikiDoc, plikD->d_name, t, rozmiar);                                
+            }                 
+        }
+        closedir(sciezkaD);
+    }
+    else
+    {
+        printf("Bład otwarcia podanej scieżki docelowej\n");
+        exit(1);
+    }
 	
 	
 	//wypisanie listy
