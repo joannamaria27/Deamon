@@ -191,12 +191,11 @@ void zmiana_daty(char *plikZ, char *plikD)
 
 }
 
+volatile int sygnal = 1;
 void handler(int signum)
     {
         syslog(LOG_INFO,"Demon został obudzony po odebraniu sygnału");
     }
-
-volatile int sygnal = 1;
 
 int demon(int argc, char **argv)  
 {
@@ -207,7 +206,7 @@ int demon(int argc, char **argv)
 	    return 1;
     }
 	
-    if(argc>5) //jesli jest wiecej niż 3 arg
+    if(argc>5) 
     {
         printf("za duzo argumnetów\n ");
         return 1;
@@ -218,17 +217,17 @@ int demon(int argc, char **argv)
     if((is_dir(argv[2]) == false) && (is_dir(argv[1]) == false))
     {
         printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
-      //  return -1;
+        return -1;
     }
     if(is_dir(argv[1]) == false)
     {
         printf("Scieżka zródłowa nie jest katalogiem\n");
-       // return -1;  
+        return -1;  
     }
     if(is_dir(argv[2]) == false)
     {
         printf("Scieżka docelowa nie jest katalogiem\n");
-        // return -1;
+        return -1;
     }
    
     printf("Oba żródła są katalogami\n");
@@ -238,7 +237,7 @@ int demon(int argc, char **argv)
 
     signal(SIGUSR1, handler);
 	
-	 struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
+    struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
     DIR * sciezkaZ; //reprezentuje strumień sciezki
     struct dirent *plikD;
     DIR * sciezkaD;
@@ -338,40 +337,39 @@ int sk=0;
         }
         plikiZr=plikiZr->nastepny;
     }
-
-
-    if(sygnal==0)
+	
+	
+    plikiDoc=plikiDocKopia;
+    plikiZr=plikiZrKopia;
+    while(plikiDoc!=NULL)
     {
-        czas = 0;
-        //nie działa log
-        printf("Dem0n budzi się\n");
-        sleep(czas);
-        syslog (LOG_NOTICE, "Demon został obudzony poprzez sygnal\n");
-    }
-    else
-    {
-        czas=5;
-        if(argc==4)  //działa :D
+        bool cz=czyIstnieje(plikiZr,plikiDoc->nazwaPliku);
+        if(cz==false)
         {
-            czas=atof(argv[3]);
-            printf("%f\n ",czas);
-        }   
-        printf("%f \n",czas);
-        sleep(czas);
-        syslog (LOG_NOTICE, "Demon został obudzony po %f minutach\n",czas);
-        closelog (); 
-    }
-
- 
-            
-            
+            char sc4[50];
+            strcpy(sc4,argv[2]);
+            strcat(sc4,"/");
+            strcat(sc4,plikiDoc->nazwaPliku);
+            remove(sc4);
+            syslog(LOG_INFO,"plik %s został usnięty", plikiDoc->nazwaPliku);
         }
+        plikiDoc=plikiDoc->nastepny;
+    } 
 
-      
+    float czas=5; //*60 =>minuty
+    if(argc==4)
+    {
+        czas=atof(argv[3]);
+    }   
+    syslog (LOG_NOTICE, "Demon śpi");
+    sleep(czas);
+    syslog (LOG_NOTICE, "Demon został obudzony po %.2f minutach",czas);
 
-    closelog ();   //zamkniecie logu
+    signal(SIGUSR1, handler);
 
-    exit(EXIT_SUCCESS);
 
+
+
+    closelog();
 
 }
