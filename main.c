@@ -16,17 +16,14 @@
 #include <time.h>
 #include <utime.h>
 
-bool is_dir(const char* path) {
-    struct stat buf;
-    stat(path, &buf);
-    return S_ISDIR(buf.st_mode);
+int CzyKatalog(char* path)
+{
+    struct stat info;       
+    if((stat(path, &info)) < 0)
+        return -1;
+    else 
+        return info.st_mode;
 }
-bool is_file(const char* path) {
-    struct stat buf;
-    stat(path, &buf);
-    return S_ISREG(buf.st_mode);
-}
-
 
 typedef struct Pliki
 {
@@ -194,6 +191,11 @@ void zmiana_daty(char *plikZ, char *plikD)
 
 }
 
+void handler(int signum)
+    {
+        syslog(LOG_INFO,"Demon został obudzony po odebraniu sygnału");
+    }
+
 volatile int sygnal = 1;
 
 int demon(int argc, char **argv)  
@@ -234,11 +236,6 @@ int demon(int argc, char **argv)
     setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
 
-    void handler(int signum)
-    {
-        printf("signal!\n");
-        sygnal=0;
-    }
     signal(SIGUSR1, handler);
 	
 	 struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
