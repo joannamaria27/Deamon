@@ -304,6 +304,24 @@ int sk=0;
             else
             {
 
+                if(plikiDoc->nastepny==NULL && sk==0)
+                {
+                    char sc3[50];
+                    char sc5[50];
+                    strcpy(sc3,argv[1]);
+                    strcat(sc3,"/");
+                    strcat(sc3,plikiZr->nazwaPliku);
+                    strcpy(sc5,argv[2]);
+                    strcat(sc5,"/");
+                    strcat(sc5,plikiZr->nazwaPliku);
+                    kopiowaie(sc3,sc5);
+                }
+            }   
+            plikiDoc=plikiDoc->nastepny;   
+        }
+        plikiZr=plikiZr->nastepny;
+    }
+
 
     if(sygnal==0)
     {
