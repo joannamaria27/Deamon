@@ -159,6 +159,24 @@ bool czas_modyfikacji (char *plikZ, char* plikD)
     
 }
 
+bool czyIstnieje(Pliki * pZr, char * nazwaP)
+{   
+        while(pZr!=NULL)
+        {            
+            if(strcmp(pZr->nazwaPliku,nazwaP)==0)
+            {              
+                return true;                                  
+            } 
+            else
+            {       
+                if(pZr->nastepny==NULL)                    
+                    return false;                   
+            } 
+            pZr=pZr->nastepny;       
+        }
+ 
+}
+
 void zmiana_daty(char *plikZ, char *plikD)
 {
     struct stat filestat;
@@ -166,8 +184,10 @@ void zmiana_daty(char *plikZ, char *plikD)
     
     stat(plikZ, &filestat);
     
-    nowa_data.actime = filestat.st_atim.tv_sec;
-    nowa_data.modtime = filestat.st_mtim.tv_sec;
+   // nowa_data.actime = filestat.st_atim.tv_sec;
+   // nowa_data.modtime = filestat.st_mtim.tv_sec;
+    nowa_data.modtime = filestat.st_mtime;
+    nowa_data.actime = filestat.st_atime;
     
     utime(plikD, &nowa_data);   // zmienia czas dostepu i modyfikacji pliku
     chmod(plikD, filestat.st_mode);
@@ -345,38 +365,12 @@ int sk=0;
         closelog (); 
     }
 
-//  while (1) 
-//  { 
- //tu działa :)
-        pid_t p;
-        p=fork();
-    
-        if (p < 0) //obsługa błędów pid
-        {
-            exit(EXIT_FAILURE);
-        }
-        if(p==0)
-        {
-            //execvp("firefox", argv);
-            printf("Dziaaaaaała\n");
-            sleep(10);
-
  
-            //brak pliku w folderze docelowym
-            //kopiowanie pliku do katalogu docelowego (open,read)
-
-            //działa ale nie czysci na koniec bufora
-                   // kopiowanie(argv[1],argv[2]);
-        
-                    //zamiast wyswietlania - kopiowanie
-
-                    //zmienić jeszcze to co sie zapisuje
-                    syslog(LOG_NOTICE, "plik został skopiowany\n");
             
             
         }
 
-      // plikiZ=plikiZ->next;
+      
 
     closelog ();   //zamkniecie logu
 
