@@ -65,7 +65,7 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
 	    printf ("błąd: %s ", strerror (errno)); 
 	    exit(1);
    	}
-    rozmiarPliku = sys_lseek(plikZ, 0, SEEK_END);
+    rozmiarPliku = lseek(plikZ, 0, SEEK_END);
     zr = mmap(NULL, rozmiarPliku, PROT_READ, MAP_PRIVATE, plikZ, 0);
 
     plikD = open(sciezkaD, O_RDWR | O_CREAT, 777);
@@ -184,7 +184,7 @@ void handler(int signum)
         syslog(LOG_INFO,"Demon został obudzony po odebraniu sygnału");
     }
 
-int demon(int argc, char **argv)  
+int main(int argc, char **argv)  
 {
     if(argc<=1 ) // dod arg by zmienic
     {
@@ -215,9 +215,15 @@ int demon(int argc, char **argv)
         return -1;
     }
 	
-		
-   
-    printf("Oba żródła są katalogami\n");
+    if (argc==5)
+    {
+        rozmiarDzielacyPliki=atof(argv[4]);
+    }
+
+    if(argc==6 && *argv == "-R")
+    {
+        //rekurencyjna synchronizacja katalogów
+    }
 
     setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
@@ -334,10 +340,26 @@ int sk=0;
                     strcpy(sc7,argv[2]);
                     strcat(sc7,"/");
                     strcat(sc7,plikiDoc->nazwaPliku);                    
-                    kopiowaie(sc6,sc7);
-                    zmiana_daty(sc6,sc7);
-                    sk=1;
-                    //break;
+                     if(argc==5)
+                    {
+                        if(rozmiarDzielacyPliki>=plikiZr->rozmiarPliku)
+                        {
+                            kopiowanie_mmap(sc6,sc7);
+                        }
+                        else
+                        {
+                            kopiowanie(sc6,sc7);
+                            zmianaDaty(sc6,sc7);
+                        }                        
+                    }   
+                    else
+                    {
+                        kopiowanie(sc6,sc7);
+                        zmianaDaty(sc6,sc7);
+                        
+                        //break;
+                    }
+                    sk=1;          
                 }                                
             } 
             else
