@@ -280,75 +280,8 @@ int main(int argc, char **argv)
 	
     signal(SIGUSR1, handler);
 	
-    struct dirent *plikZ; //wskazuje na element w katalogu; przechowuje rózne informacje
-    DIR * sciezkaZ; //reprezentuje strumień sciezki
-    struct dirent *plikD;
-    DIR * sciezkaD;
-
-char sc[50];
-char t[ 100 ] = "";
-char * ar2;
-char * ar1;
-
-//pliki zrodlowe
-    if((sciezkaZ = opendir (argv[1]))!=NULL) //otwiera strumień do katalogu
-    {        
-        while((plikZ = readdir (sciezkaZ))!=NULL)  //zwraca wskaznik do struktury reprez. plik
-        {
-            strcpy(sc,argv[1]);
-            strcat(sc,"/");
-            ar1=strcat(sc,plikZ->d_name);
-            struct stat sb;
-            stat(ar1, &sb);
-            strftime(t, 100, "%d/%m/%Y %H:%M:%S", localtime( &sb.st_mtime));
-            if (!S_ISREG(sb.st_mode)) 
-            {
-
-                continue;
-            } 
-            else
-            {
-                dodawanie(&plikiZr, plikZ->d_name, t);
-            }
-            
-        }
-        closedir(sciezkaZ); //zamyka strumien sciezki
-    }
-    else
-    {
-        printf("Bład otwarcia podanej scieżki zrodlowej\n");
-        exit(1);
-    } 
-	
-char sc2[50];
-//pliki docelowe
-    if((sciezkaD = opendir (argv[2]))!=NULL)
-    {        
-        while((plikD = readdir (sciezkaD))!=NULL)
-        {            
-            strcpy(sc2,argv[2]);
-            strcat(sc2,"/");
-            ar2 =strcat(sc2,plikD->d_name);
-            struct stat sb;
-            stat(ar2, &sb);
-            rozmiar=sb.st_size;
-            strftime(t, 100, "%d/%m/%Y %H:%M:%S", localtime( &sb.st_mtime));
-            if (!S_ISREG(sb.st_mode)) 
-            {
-
-            } 
-            else
-            {
-                dodawanie(&plikiDoc, plikD->d_name, t, rozmiar);                                
-            }                 
-        }
-        closedir(sciezkaD);
-    }
-    else
-    {
-        printf("Bład otwarcia podanej scieżki docelowej\n");
-        exit(1);
-    }
+    dodawaniePlikow(argv[1], plikiZr);
+    dodawaniePlikow(argv[2], plikiDoc);
 	
 	
 	//wypisanie listy
