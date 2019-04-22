@@ -178,6 +178,47 @@ void zmiana_daty(char *plikZ, char *plikD)
 
 }
 
+
+void dodawaniePlikow(char * argument, Pliki * pliki)
+{
+    struct dirent *plik; //wskazuje na element w katalogu; przechowuje rózne informacje
+    DIR * sciezka; //reprezentuje strumień sciezki
+
+    char sc[50];
+    char t[100];
+    char * ar1;
+    float rozmiar;
+
+    if((sciezka = opendir (argument))!=NULL) //otwiera strumień do katalogu
+    {        
+        while((plik = readdir (sciezka))!=NULL)  //zwraca wskaznik do struktury reprez. plik
+        {
+            strcpy(sc,argument);
+            strcat(sc,"/");
+            ar1=strcat(sc,plik->d_name);
+            struct stat sb;
+            stat(ar1, &sb);
+            rozmiar=sb.st_size;
+            strftime(t, 100, "%d/%m/%Y %H:%M:%S", localtime( &sb.st_mtime));
+            if (!S_ISREG(sb.st_mode)) 
+            {
+                continue;
+            } 
+            else
+            {
+                dodawanie(&pliki, plik->d_name, t, rozmiar);
+            }
+            
+        }
+        closedir(sciezka); //zamyka strumien sciezki
+    }
+    else
+    {
+        printf("Bład otwarcia podanej scieżki zrodlowej\n");
+        exit(1);
+    } 
+}
+
 volatile int sygnal = 1;
 void handler(int signum)
     {
