@@ -84,6 +84,7 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     memcpy(doc, zr, rozmiarPliku);
     munmap(zr, rozmiarPliku);
     munmap(doc, rozmiarPliku);
+    syslog(LOG_INFO,"plik %s został skopiowany poprzez mapowanie",sciezkaZ);
 
     close(plikZ);
     close(plikD);
@@ -227,32 +228,37 @@ void handler(int signum)
 
 int main(int argc, char **argv)  
 {
-    if(argc<=1 ) // dod arg by zmienic
-    {
-        //printf ("błąd: %s ", strerror (errno)); 
-        printf("za mało argumnetów\n ");
-	    return 1;
-    }
-	
-    if(argc>5) 
-    {
-        printf("za duzo argumnetów\n ");
-        return 1;
-    }
+    setlogmask (LOG_UPTO (LOG_INFO));
+    openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
-    if((is_dir(argv[2]) == false) && (is_dir(argv[1]) == false))
+    if(argc<=1)
     {
-        printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
+        printf("Brak argumentów\n");
+        syslog(LOG_INFO,"Brak argumentów");
         return -1;
     }
-    if(is_dir(argv[1]) == false)
+    if(argc>6)
     {
-        printf("Scieżka zródłowa nie jest katalogiem\n");
-        return -1;  
+        printf("Za dużo argumentów\n");
+        syslog(LOG_INFO,"Za dużo argumentów");
+        return -1;
     }
-    if(is_dir(argv[2]) == false)
+     if((CzyKatalog(argv[2])==1) && (CzyKatalog(argv[1])==1))
+    {
+        printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
+        syslog(LOG_INFO,"Scieżka zródłowa i docelowa nie jest katalogiem");
+        return -1;
+    }
+    if(CzyKatalog(argv[1])==1)
+    {
+        printf("Scieżka źródłowa nie jest katalogiem\n");
+        syslog(LOG_INFO,"Scieżka źródłowa nie jest katalogiem");
+        return -1;
+    }
+    if(CzyKatalog(argv[2])==1)
     {
         printf("Scieżka docelowa nie jest katalogiem\n");
+        syslog(LOG_INFO,"Scieżka docelowa nie jest katalogiem");
         return -1;
     }
 	
@@ -266,10 +272,7 @@ int main(int argc, char **argv)
         //rekurencyjna synchronizacja katalogów
     }
 
-    setlogmask (LOG_UPTO (LOG_NOTICE)); //maksymalny, najważniejszy log jaki można wysłać;
-    openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);    //pierwszy arg nazwa programiu, pózniej co ma się wypisać oprócz samej wiadomosci chyba?
-
-	
+    	
     Pliki *plikiZr;
     Pliki *plikiDoc;
     plikiZr=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
@@ -449,9 +452,11 @@ int sk=0;
     }   
     syslog (LOG_NOTICE, "Demon śpi");
     sleep(czas);
-    syslog (LOG_NOTICE, "Demon został obudzony po %.2f minutach",czas);
+    syslog (LOG_NOTICE, "Demon został obudzony po %.2f sekundach",czas);
 
     signal(SIGUSR1, handler);
+	 syslog (LOG_NOTICE, "Demon działa – synchronizuje");
+        sleep(60);
 
 
 
