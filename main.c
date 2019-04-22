@@ -262,15 +262,31 @@ int main(int argc, char **argv)
         return -1;
     }
 	
+   
+    double czas=5; //*60 =>minuty
+    if(argc==4)
+    {
+        czas=atof(argv[3]);
+    }
+
+    double rozmiarDzielacyPliki=0;
     if (argc==5)
     {
+        czas=atof(argv[3]);
         rozmiarDzielacyPliki=atof(argv[4]);
     }
 
-    if(argc==6 && *argv == "-R")
+    if(argc==6 && argv[5][0] == '-'  && argv[5][1] == 'R')
     {
+        czas=atof(argv[3]);
+        rozmiarDzielacyPliki=atof(argv[4]);
+       
         //rekurencyjna synchronizacja katalogów
+        
     }
+    syslog (LOG_NOTICE, "Demon śpi");
+    sleep(czas);
+    syslog (LOG_INFO, "Demon został obudzony po %.2f minutach",czas);
 
     	
     Pliki *plikiZr;
@@ -378,14 +394,6 @@ int sk=0;
         plikiDoc=plikiDoc->nastepny;
     } 
 
-    float czas=5; //*60 =>minuty
-    if(argc==4)
-    {
-        czas=atof(argv[3]);
-    }   
-    syslog (LOG_NOTICE, "Demon śpi");
-    sleep(czas);
-    syslog (LOG_NOTICE, "Demon został obudzony po %.2f sekundach",czas);
 
     signal(SIGUSR1, handler);
 	 syslog (LOG_NOTICE, "Demon działa – synchronizuje");
