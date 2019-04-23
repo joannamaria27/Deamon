@@ -64,7 +64,7 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
     closedir(plikZ);
     free(plik);
     return 0;
-
+}
 
 
 void kopiowanie(char * plikZrodlowy, char * plikDocelowy)
