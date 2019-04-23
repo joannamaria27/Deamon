@@ -90,6 +90,36 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     close(plikD);
 }
 
+
+int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
+{
+    DIR *plikZ;
+    DIR *plikD;
+    struct dirent *plik;
+    struct stat srcfileinfo;
+    struct stat dstfileinfo;
+    if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
+    {
+        syslog(LOG_ERR,"Blad otwarcia katalogu\n");
+        return -1;
+    }
+    
+    syslog(LOG_INFO,"Rekurencyjna synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
+    
+            if(S_ISDIR(srcfileinfo.st_mode)){
+                if (rekurencja == true) 
+                {
+                    if (stat(sciezkaD,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    {
+                        mkdir(sciezkaD,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
+                        rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                    }
+                    else rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar);
+                }
+            }
+        }
+
+
 int CzyKatalog(char* path)
 {
     struct stat info;       
@@ -281,7 +311,7 @@ int main(int argc, char **argv)
         czas=atof(argv[3]);
         rozmiarDzielacyPliki=atof(argv[4]);
        
-        //rekurencyjna synchronizacja katalogów
+        rekSynchro(argv[1], argv[2], true, rozmiarDzielacyPliki); //rekurencyjna synchronizacja katalogów
         
     }
     syslog (LOG_NOTICE, "Demon śpi");
