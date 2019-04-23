@@ -16,14 +16,16 @@
 #include <time.h>
 #include <utime.h>
 #include <stdbool.h>
-
 #include <getopt.h>
+
 
 int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
 {
     DIR *plikZ;
     DIR *plikD;
     struct dirent *plik;
+    char srcpath[100];
+    char dstpath[100];
     struct stat srcfileinfo;
     struct stat dstfileinfo;
     if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
@@ -31,22 +33,37 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
         syslog(LOG_ERR,"Blad otwarcia katalogu\n");
         return -1;
     }
-
-    syslog(LOG_INFO,"Rekurencyjna synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
-
-            if(S_ISDIR(srcfileinfo.st_mode))
-            {
-                if (rekurencja == true) 
+    syslog(LOG_INFO,"synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
+    while ((plik = readdir(plikZ)) != NULL)
+    {
+        if( (strcmp(plik->nazwaPliku,".")==0) || (strcmp(plik->nazwaPliku,"..")==0) ) continue;
+        dstfileinfo.st_mtime = 0;
+        strcpy(srcpath,sciezkaZ);
+        strcpy(dstpath,sciezkaD);
+        strcat(srcpath,"/");
+        strcat(srcpath,plik->nazwaPliku);
+        strcat(dstpath,"/");
+        strcat(dstpath,plik->nazwaPliku);
+        stat(srcpath,&srcfileinfo);
+        stat(dstpath,&dstfileinfo);
+        
+        if(S_ISDIR(srcfileinfo.st_mode)) {
+                if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
                 {
-                    if (stat(sciezkaD,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    if (stat(dstpath,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
                     {
-                        mkdir(sciezkaD,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
-                        rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                        mkdir(dstpath,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
+                        rekSynchro(srcpath,dstpath,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
                     }
-                    else rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar);
+                    else rekSynchro(srcpath,dstpath,rekurencja,rozmiar);
                 }
-            }
-}
+        }
+    }
+
+    closedir(plikD);
+    closedir(plikZ);
+    free(plik);
+    return 0;
 
 
 
