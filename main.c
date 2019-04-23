@@ -1,24 +1,56 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <syslog.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <sys/types.h>
 #include <dirent.h>
+#include <syslog.h>
 #include <signal.h>
 #include <sys/syslog.h>
 #include <sys/mman.h>
-#include <stdbool.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
 #include <time.h>
 #include <utime.h>
-#include <assert.h>
+#include <stdbool.h>
+
+#include <getopt.h>
+
+int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
+{
+    DIR *plikZ;
+    DIR *plikD;
+    struct dirent *plik;
+    struct stat srcfileinfo;
+    struct stat dstfileinfo;
+    if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
+    {
+        syslog(LOG_ERR,"Blad otwarcia katalogu\n");
+        return -1;
+    }
+
+    syslog(LOG_INFO,"Rekurencyjna synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
+
+            if(S_ISDIR(srcfileinfo.st_mode))
+            {
+                if (rekurencja == true) 
+                {
+                    if (stat(sciezkaD,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    {
+                        mkdir(sciezkaD,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
+                        rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                    }
+                    else rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar);
+                }
+            }
+}
 
 
-void kopiowaie(char * plikZrodlowy, char * plikDocelowy)
+
+void kopiowanie(char * plikZrodlowy, char * plikDocelowy)
 {
     int plikZ = open(plikZrodlowy,O_RDONLY); 
     int plikD = open(plikDocelowy, O_CREAT |O_TRUNC| O_RDWR  ,777);
@@ -29,17 +61,18 @@ void kopiowaie(char * plikZrodlowy, char * plikDocelowy)
     }
     int ileOdcz=0;
     int ileZapis=0;
-    char buffor[200];
+    char buffor[1024];
     do
     {   
         memset(buffor,0,sizeof(buffor));
         ileOdcz=read(plikZ,buffor,sizeof(buffor));    
     }
-    while(ileOdcz>=197);
+    while(ileOdcz>=1024);
     close(plikZ);
     ileZapis=write(plikD,buffor,ileOdcz);
+    syslog(LOG_INFO,"plik %s został skopiowany poprzez zwykłe kopiowanie",plikZrodlowy);
     close(plikD);
-    syslog(LOG_INFO,"plik %s został skopiowany poprzez mapowanie",plikZrodlowy);
+   
 }
 
 void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
@@ -65,7 +98,7 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
 	    printf ("błąd: %s ", strerror (errno)); 
 	    exit(1);
    	}
-    rozmiarPliku = lseek(plikZ, 0, SEEK_END);
+    rozmiarPliku = lseek(plikZ, 0, SEEK_END); //////zmi
     zr = mmap(NULL, rozmiarPliku, PROT_READ, MAP_PRIVATE, plikZ, 0);
 
     plikD = open(sciezkaD, O_RDWR | O_CREAT, 777);
@@ -73,12 +106,10 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     doc = mmap(NULL, rozmiarPliku, PROT_READ | PROT_WRITE, MAP_SHARED, plikD, 0);
 
     /*mmap, munmap - mapowanie lub usunięcie mapowania plików lub urządzeń w pamięci
-
     memcpy (void* dest, const void* src, size_t size);
     dest - wskaźnik do obiektu docelowego.
     src - wskaźnik do obiektu źródłowego.
     size - liczba bajtów do skopiowania.
-
     munmap(void *start, size_t length);*/
 
     memcpy(doc, zr, rozmiarPliku);
@@ -90,36 +121,6 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     close(plikD);
 }
 
-
-int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
-{
-    DIR *plikZ;
-    DIR *plikD;
-    struct dirent *plik;
-    struct stat srcfileinfo;
-    struct stat dstfileinfo;
-    if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
-    {
-        syslog(LOG_ERR,"Blad otwarcia katalogu\n");
-        return -1;
-    }
-    
-    syslog(LOG_INFO,"Rekurencyjna synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
-    
-            if(S_ISDIR(srcfileinfo.st_mode)){
-                if (rekurencja == true) 
-                {
-                    if (stat(sciezkaD,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
-                    {
-                        mkdir(sciezkaD,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
-                        rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
-                    }
-                    else rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar);
-                }
-            }
-        }
-
-
 int CzyKatalog(char* path)
 {
     struct stat info;       
@@ -128,7 +129,6 @@ int CzyKatalog(char* path)
     else 
         return info.st_mode;
 }
-
 
 typedef struct Pliki
 {
@@ -175,40 +175,36 @@ void wypiszListe(Pliki* lista)
     }
 }
 
-bool czyIstnieje(Pliki * pZr, char * nazwaP)
+bool czyIstnieje(Pliki * p, char * nazwaP)
 {   
-        while(pZr!=NULL)
+        while(p!=NULL)
         {            
-            if(strcmp(pZr->nazwaPliku,nazwaP)==0)
+            if(strcmp(p->nazwaPliku,nazwaP)==0)
             {              
                 return true;                                  
             } 
             else
             {       
-                if(pZr->nastepny==NULL)                    
+                if(p->nastepny==NULL)                    
                     return false;                   
             } 
-            pZr=pZr->nastepny;       
+            p=p->nastepny;       
         }
- 
 }
 
-void zmianaDaty (char *plikZ, char *plikD)
+void zmianaDaty(char *plikZ, char *plikD)
 {
+
     struct stat filestat;
     struct utimbuf nowa_data; // to specify new access and modification times for a file
     
     stat(plikZ, &filestat);
-   // nowa_data.actime = filestat.st_atim.tv_sec;
-   // nowa_data.modtime = filestat.st_mtim.tv_sec;
     nowa_data.modtime = filestat.st_mtime;
     nowa_data.actime = filestat.st_atime;
     
     utime(plikD, &nowa_data);   // zmienia czas dostepu i modyfikacji pliku
     chmod(plikD, filestat.st_mode);
-
 }
-
 
 void dodawaniePlikow(char * argument, Pliki * pliki)
 {
@@ -245,21 +241,25 @@ void dodawaniePlikow(char * argument, Pliki * pliki)
     }
     else
     {
-        printf("Bład otwarcia podanej scieżki zrodlowej\n");
+        printf("Bład otwarcia podanej scieżki\n");
         exit(1);
     } 
 }
 
-volatile int sygnal = 1;
+volatile int sygnal = 1; //czy potrzebne
 void handler(int signum)
     {
         syslog(LOG_INFO,"Demon został obudzony po odebraniu sygnału");
     }
 
-int main(int argc, char **argv)  
+
+int main(int argc,char** argv)
 {
     setlogmask (LOG_UPTO (LOG_INFO));
     openlog ("demon-projekt", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+    
+    char * sciezkaZrodlowa= argv[1];
+    char * sciezkaDocelowa= argv[2];
 
     if(argc<=1)
     {
@@ -273,165 +273,199 @@ int main(int argc, char **argv)
         syslog(LOG_INFO,"Za dużo argumentów");
         return -1;
     }
-     if((CzyKatalog(argv[2])==1) && (CzyKatalog(argv[1])==1))
+     if((CzyKatalog(sciezkaDocelowa)==1) && (CzyKatalog(sciezkaZrodlowa)==1))
     {
         printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka zródłowa i docelowa nie jest katalogiem");
         return -1;
     }
-    if(CzyKatalog(argv[1])==1)
+    if(CzyKatalog(sciezkaZrodlowa)==1)
     {
         printf("Scieżka źródłowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka źródłowa nie jest katalogiem");
         return -1;
     }
-    if(CzyKatalog(argv[2])==1)
+    if(CzyKatalog(sciezkaDocelowa)==1)
     {
         printf("Scieżka docelowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka docelowa nie jest katalogiem");
         return -1;
     }
-	
-   
-    double czas=5; //*60 =>minuty
-    if(argc==4)
-    {
-        czas=atof(argv[3]);
-    }
 
+    double czas=5;
     double rozmiarDzielacyPliki=0;
-    if (argc==5)
+    bool rekurencja = false;
+    int c;
+    if(argc>3)
     {
-        czas=atof(argv[3]);
-        rozmiarDzielacyPliki=atof(argv[4]);
-    }
-
-    if(argc==6 && argv[5][0] == '-'  && argv[5][1] == 'R')
-    {
-        czas=atof(argv[3]);
-        rozmiarDzielacyPliki=atof(argv[4]);
-       
-        rekSynchro(argv[1], argv[2], true, rozmiarDzielacyPliki); //rekurencyjna synchronizacja katalogów
+        while ((c = getopt (argc, argv, "t:T:s:S:rR")) != -1)
+        {
+            switch(c)
+            {
+                case 't':
+                case 'T': //time – czas
+                    czas=atof(optarg);
+                    printf("%f \n",czas);  
+                    break;
+                case 's': 
+                case 'S': //size – rozmiar
+                    rozmiarDzielacyPliki=atof(optarg);
+                    printf("%f \n",rozmiarDzielacyPliki);
+                    break;
+                case 'r':
+                case 'R': //rekurencja
+                    rekurencja=true;
+                    
+                    break;
+            }
+                
+        }
         
     }
+   
     syslog (LOG_NOTICE, "Demon śpi");
     sleep(czas);
-    syslog (LOG_INFO, "Demon został obudzony po %.2f minutach",czas);
+    syslog (LOG_INFO, "Demon został obudzony po %.2f sekundach",czas);
 
-    	
     Pliki *plikiZr;
     Pliki *plikiDoc;
     plikiZr=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
     plikiDoc=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
-	
+
+
+    dodawaniePlikow(sciezkaZrodlowa, plikiZr);
+    dodawaniePlikow(sciezkaDocelowa, plikiDoc);
+
+    // printf("-------------------------------------------------\n");
+    // wypiszListe(plikiZr);
+    // printf("-------------------------------------------------\n");
+    // wypiszListe(plikiDoc);
+
+    // signal(SIGUSR1, ignor);//ignoruje demona
+
     signal(SIGUSR1, handler);
-	
-    dodawaniePlikow(argv[1], plikiZr);
-    dodawaniePlikow(argv[2], plikiDoc);
-	
-	
-	//wypisanie listy
-printf("-------------------------------------------------\n");
-wypisz_liste(plikiZr);
-printf("-------------------------------------------------\n");
-wypisz_liste(plikiDoc);
-
-// signal(SIGUSR1, ignor);//ignoruje demona
-
-Pliki * plikiZrKopia;
-Pliki * plikiDocKopia;
-plikiZrKopia = plikiZr->nastepny;
-plikiDocKopia = plikiDoc->nastepny;
-int sk=0;
 
 
-    while(plikiZr!=NULL)
-    {   
-        plikiDoc=plikiDocKopia;
-        sk=0;        
-        while((plikiDoc!=NULL) && (sk==0))
-        {             
-            if(strcmp(plikiZr->nazwaPliku,plikiDoc->nazwaPliku)==0)
+    pid_t p;
+    p=fork();
+    if(p==0)
+    {
+
+        Pliki * plikiZrKopia;
+        Pliki * plikiDocKopia;
+        plikiZrKopia = plikiZr->nastepny;
+        plikiDocKopia = plikiDoc->nastepny;
+        int sk=0;
+
+
+
+        plikiZr=plikiZrKopia;
+        while(plikiZr!=NULL)
+        {
+
+            plikiDoc=plikiDocKopia;
+            bool czy=czyIstnieje(plikiDoc,plikiZr->nazwaPliku);
+            if(czy==false)
             {
-                if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)!=0)
+                char sc3[50];
+                char sc4[50];
+                strcpy(sc3,sciezkaZrodlowa);
+                strcat(sc3,"/");
+                strcat(sc3,plikiZr->nazwaPliku);
+                strcpy(sc4,sciezkaDocelowa);
+                strcat(sc4,"/");
+                strcat(sc4,plikiZr->nazwaPliku);
+                if(argc==5)
                 {
-                    char sc6[50];
-                    char sc7[50];
-                    strcpy(sc6,argv[1]);
-                    strcat(sc6,"/");
-                    strcat(sc6,plikiZr->nazwaPliku);
-                    strcpy(sc7,argv[2]);
-                    strcat(sc7,"/");
-                    strcat(sc7,plikiDoc->nazwaPliku);                    
-                     if(argc==5)
+                    if(rozmiarDzielacyPliki<=plikiZr->rozmiarPliku)
                     {
-                        if(rozmiarDzielacyPliki>=plikiZr->rozmiarPliku)
-                        {
-                            kopiowanie_mmap(sc6,sc7);
-                        }
-                        else
-                        {
-                            kopiowanie(sc6,sc7);
-                            zmianaDaty(sc6,sc7);
-                        }                        
-                    }   
+                        kopiowanie_mmap(sc3,sc4);
+                        zmianaDaty(sc3,sc4);
+                    }
                     else
                     {
-                        kopiowanie(sc6,sc7);
-                        zmianaDaty(sc6,sc7);
+                        kopiowanie(sc3,sc4);
+                        zmianaDaty(sc3,sc4);
+                    }                        
+                }   
+                else    
+                {
+                    kopiowanie(sc3,sc4);
+                    zmianaDaty(sc3,sc4);
+                }         
                         
-                        //break;
-                    }
-                    sk=1;          
-                }                                
-            } 
+            }
             else
             {
-
-                if(plikiDoc->nastepny==NULL && sk==0)
+                plikiDoc=plikiDocKopia;
+                while(plikiDoc!=NULL) 
                 {
-                    char sc3[50];
-                    char sc5[50];
-                    strcpy(sc3,argv[1]);
-                    strcat(sc3,"/");
-                    strcat(sc3,plikiZr->nazwaPliku);
-                    strcpy(sc5,argv[2]);
-                    strcat(sc5,"/");
-                    strcat(sc5,plikiZr->nazwaPliku);
-                    kopiowaie(sc3,sc5);
+                    if(strcmp(plikiZr->nazwaPliku,plikiDoc->nazwaPliku)==0)
+                    {
+                        if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)!=0)
+                        {
+                            char sc1[50];
+                            char sc2[50];
+                            strcpy(sc1,sciezkaZrodlowa);
+                            strcat(sc1,"/");
+                            strcat(sc1,plikiZr->nazwaPliku);
+                            strcpy(sc2,sciezkaDocelowa);
+                            strcat(sc2,"/");
+                            strcat(sc2,plikiZr->nazwaPliku);    
+                            if(argc==5)
+                            {
+                                if(rozmiarDzielacyPliki<=plikiZr->rozmiarPliku)
+                                {
+                                    kopiowanie_mmap(sc1,sc2);
+                                }
+                                else
+                                {
+                                    kopiowanie(sc1,sc2);
+                                    zmianaDaty(sc1,sc2);
+                                }                                       
+                            }   
+                            else
+                            {
+                                kopiowanie(sc1,sc2);
+                                zmianaDaty(sc1,sc2);
+                            }
+                            
+                        }
+                        // continue;                        
+                    }
+                    plikiDoc=plikiDoc->nastepny;
+                    
                 }
-            }   
-            plikiDoc=plikiDoc->nastepny;   
+                
+            } 
+        
+            plikiZr=plikiZr->nastepny;
         }
-        plikiZr=plikiZr->nastepny;
-    }
-	
-	
-    plikiDoc=plikiDocKopia;
-    plikiZr=plikiZrKopia;
-    while(plikiDoc!=NULL)
-    {
-        bool cz=czyIstnieje(plikiZr,plikiDoc->nazwaPliku);
-        if(cz==false)
+
+
+        plikiDoc=plikiDocKopia;
+        plikiZr=plikiZrKopia;
+        while(plikiDoc!=NULL)
         {
-            char sc4[50];
-            strcpy(sc4,argv[2]);
-            strcat(sc4,"/");
-            strcat(sc4,plikiDoc->nazwaPliku);
-            remove(sc4);
-            syslog(LOG_INFO,"plik %s został usnięty", plikiDoc->nazwaPliku);
-        }
-        plikiDoc=plikiDoc->nastepny;
-    } 
+            bool cz=czyIstnieje(plikiZr,plikiDoc->nazwaPliku);
+            if(cz==false)
+            {
+                char sc5[50];
+                strcpy(sc5,sciezkaDocelowa);
+                strcat(sc5,"/");
+                strcat(sc5,plikiDoc->nazwaPliku);
+                remove(sc5);
+                syslog(LOG_INFO,"plik %s został usnięty", plikiDoc->nazwaPliku);
+            }
+            plikiDoc=plikiDoc->nastepny;
+        } 
 
 
-    signal(SIGUSR1, handler);
-	 syslog (LOG_NOTICE, "Demon działa – synchronizuje");
+        rekSynchro(sciezkaZrodlowa, sciezkaDocelowa, rekurencja, rozmiarDzielacyPliki);
+
+        syslog (LOG_NOTICE, "Demon działa – synchronizuje");
         sleep(60);
-
-
-
-
+    }
+    
     closelog();
-
 }
