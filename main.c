@@ -163,7 +163,7 @@ bool czyIstnieje(Pliki * pZr, char * nazwaP)
  
 }
 
-void zmiana_daty(char *plikZ, char *plikD)
+void zmianaDaty (char *plikZ, char *plikD)
 {
     struct stat filestat;
     struct utimbuf nowa_data; // to specify new access and modification times for a file
