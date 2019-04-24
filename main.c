@@ -19,15 +19,23 @@
 #include <getopt.h>
 
 
+int typPliku(struct stat filestat)
+{
+    if(S_ISREG(filestat.st_mode)) return 0;
+    else
+    if(S_ISDIR(filestat.st_mode)) return 1;
+    else return -1;
+}
+
 int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
 {
     DIR *plikZ;
     DIR *plikD;
     struct dirent *plik;
-    char srcpath[100];
-    char dstpath[100];
-    struct stat srcfileinfo;
-    struct stat dstfileinfo;
+    char scZrodlowa[100];
+    char scDocelowa[100];
+    struct stat filestatZ;
+    struct stat filestatD;
     if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
     {
         syslog(LOG_ERR,"Blad otwarcia katalogu\n");
@@ -36,30 +44,42 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
     syslog(LOG_INFO,"synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
     while ((plik = readdir(plikZ)) != NULL)
     {
-        if( (strcmp(plik->nazwaPliku,".")==0) || (strcmp(plik->nazwaPliku,"..")==0) ) continue;
-        dstfileinfo.st_mtime = 0;
-        strcpy(srcpath,sciezkaZ);
-        strcpy(dstpath,sciezkaD);
-        strcat(srcpath,"/");
-        strcat(srcpath,plik->nazwaPliku);
-        strcat(dstpath,"/");
-        strcat(dstpath,plik->nazwaPliku);
-        stat(srcpath,&srcfileinfo);
-        stat(dstpath,&dstfileinfo);
+        if( (strcmp(plik->d_name,".")==0) || (strcmp(plik->d_name,"..")==0) ) continue;
+        filestatD.st_mtime = 0;
+        strcpy(scZrodlowa,sciezkaZ);
+        strcpy(scDocelowa,sciezkaD);
+        strcat(scZrodlowa,"/");
+        strcat(scZrodlowa,plik->d_name);
+        strcat(scDocelowa,"/");
+        strcat(scDocelowa,plik->d_name);
+        stat(scZrodlowa,&filestatZ);
+        stat(scDocelowa,&filestatD);
         
-        if(S_ISDIR(srcfileinfo.st_mode)) {
+        switch (typPliku(filestatZ)) //sprawdzamy czym jest ścieżka
+        {
+            case 0: //jeśli ścieżka jest zwykłym plikiem
+                if(filestatZ.st_mtime > filestatD.st_mtime) //jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
+                {
+                    if (filestatZ.st_size > rozmiar) //jeśli rozmiar pliku przekracza zadany rozmiar
+                    kopiowanie_mmap(scZrodlowa,scDocelowa); //kopiowanie przez mapowanie
+                    else kopiowanie(scZrodlowa,scDocelowa); //zwykłe kopiowanie
+                }
+                //i++;
+                break;
+            case 1: //jesli ścieżka jest folderem
                 if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
                 {
-                    if (stat(dstpath,&dstfileinfo) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    if (stat(scDocelowa,&filestatD) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
                     {
-                        mkdir(dstpath,srcfileinfo.st_mode); //utworz w katalogu docelowym folder
-                        rekSynchro(srcpath,dstpath,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                        mkdir(scDocelowa,filestatZ.st_mode); //utworz w katalogu docelowym folder
+                        rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
                     }
-                    else rekSynchro(srcpath,dstpath,rekurencja,rozmiar);
+                    else rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar);
                 }
+                break;
+            default: break;
         }
     }
-
     closedir(plikD);
     closedir(plikZ);
     free(plik);
