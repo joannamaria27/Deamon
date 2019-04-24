@@ -134,7 +134,7 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
             case 0: //jeśli ścieżka jest zwykłym plikiem
                 if(filestatZ.st_mtime > filestatD.st_mtime) //jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
                 {
-                    if (filestatZ.st_size > rozmiar) //jeśli rozmiar pliku przekracza zadany rozmiar
+                    if (filestatZ.st_size >= rozmiar) //jeśli rozmiar pliku przekracza zadany rozmiar
                     kopiowanie_mmap(scZrodlowa,scDocelowa); //kopiowanie przez mapowanie
                     else kopiowanie(scZrodlowa,scDocelowa); //zwykłe kopiowanie
                 }
@@ -145,6 +145,7 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
                     if (stat(scDocelowa,&filestatD) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
                     {
                         mkdir(scDocelowa,filestatZ.st_mode); //utworz w katalogu docelowym folder
+                        syslog(LOG_INFO,"stworzono katalog: %s",scDocelowa);
                         rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
                     }
                     else rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar);
