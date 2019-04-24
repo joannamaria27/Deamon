@@ -39,7 +39,7 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
         syslog(LOG_ERR,"Blad otwarcia katalogu\n");
         return -1;
     }
-    syslog(LOG_INFO,"synchronizacja dwóch katalogów %s %s",sciezkaZ,sciezkaD);
+    
     while ((plik = readdir(plikZ)) != NULL)
     {
         if( (strcmp(plik->d_name,".")==0) || (strcmp(plik->d_name,"..")==0) ) continue;
