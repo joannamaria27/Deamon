@@ -285,6 +285,70 @@ void dodawaniePlikow(char * argument, Pliki * pliki)
     } 
 }
 
+
+int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
+{
+    struct dirent *plik;
+    struct stat filestatZ;
+    struct stat filestatD;
+    DIR *plikZ;
+    DIR *plikD;
+    char scZrodlowa[100];
+    char scDocelowa[100];
+    
+    if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
+    {
+        syslog(LOG_ERR,"Blad otwarcia katalogu\n");
+        return -1;
+    }
+    
+    while ((plik = readdir(plikD)) != NULL)
+    {
+        if( (strcmp(plik->d_name,".")==0) || (strcmp(plik->d_name,"..")==0) ) continue;
+        filestatD.st_mtime = 0;
+        strcpy(scZrodlowa,sciezkaZ);
+        strcpy(scDocelowa,sciezkaD);
+        strcat(scZrodlowa,"/");
+        strcat(scZrodlowa,plik->d_name);
+        strcat(scDocelowa,"/");
+        strcat(scDocelowa,plik->d_name);
+        stat(scZrodlowa,&filestatZ);
+        stat(scDocelowa,&filestatD);
+        
+
+        switch (typPliku(filestatD)) //sprawdzamy czym jest ścieżka
+        {
+            case 0: //jeśli ścieżka jest zwykłym plikiem
+                if( (filestatZ.st_mtime > filestatD.st_mtime) || (stat(scZrodlowa,&filestatD) == -1) )//jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
+                {
+                    remove(scDocelowa);
+                    syslog(LOG_INFO,"plik %s został usuniety",scDocelowa);
+
+                }
+                break;
+            case 1: //jesli ścieżka jest folderem
+                if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
+                {
+                    if (stat(scZrodlowa,&filestatD) == -1)
+                    { //jeśli w katalogu zr brak folderu z katalogu doc
+                           if (nftw(scDocelowa, rmFiles, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) < 0)
+                        {
+                            perror("ERROR: ntfw");
+                            exit(1);
+                        }
+                        syslog(LOG_INFO,"katalog %s został usuniety",scDocelowa);
+                    }
+                }
+                break;
+            default: break;
+        }
+    }
+    closedir(plikD);
+    closedir(plikZ);
+    free(plik);
+    return 0;
+}
+
 volatile int sygnal = 1; //czy potrzebne
 void handler(int signum)
     {
