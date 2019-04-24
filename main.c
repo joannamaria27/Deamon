@@ -453,7 +453,21 @@ int main(int argc,char** argv)
     // signal(SIGUSR1, ignor);//ignoruje demona
 
     signal(SIGUSR1, handler);
-
+if(rekurencja==1)
+    {
+        while (1)
+        {
+            pid_t r;
+            r=fork();
+            if(r==0)
+            {
+                rekSynchro(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
+                rekSynchroUsuwanie(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
+            }    
+            sleep(60);    
+        }
+        
+    }
 
     pid_t p;
     p=fork();
