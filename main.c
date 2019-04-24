@@ -29,11 +29,14 @@ int typPliku(struct stat filestat)
 
 int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
 {
-    DIR *plikZ;
-    DIR *plikD;
     struct dirent *plik;
     struct stat filestatZ;
     struct stat filestatD;
+    DIR *plikZ;
+    DIR *plikD;
+    char scZrodlowa[100];
+    char scDocelowa[100];
+    
     if (((plikZ = opendir(sciezkaZ)) == NULL) || ((plikD = opendir(sciezkaD)) == NULL))
     {
         syslog(LOG_ERR,"Blad otwarcia katalogu\n");
@@ -43,6 +46,15 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
     while ((plik = readdir(plikZ)) != NULL)
     {
         if( (strcmp(plik->d_name,".")==0) || (strcmp(plik->d_name,"..")==0) ) continue;
+        filestatD.st_mtime = 0;
+        strcpy(scZrodlowa,sciezkaZ);
+        strcpy(scDocelowa,sciezkaD);
+        strcat(scZrodlowa,"/");
+        strcat(scZrodlowa,plik->d_name);
+        strcat(scDocelowa,"/");
+        strcat(scDocelowa,plik->d_name);
+        stat(scZrodlowa,&filestatZ);
+        stat(scDocelowa,&filestatD);
         
         switch (typPliku(filestatZ)) //sprawdzamy czym jest ścieżka
         {
@@ -50,19 +62,19 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
                 if(filestatZ.st_mtime > filestatD.st_mtime) //jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
                 {
                     if (filestatZ.st_size > rozmiar) //jeśli rozmiar pliku przekracza zadany rozmiar
-                    kopiowanie_mmap(sciezkaZ,sciezkaD); //kopiowanie przez mapowanie
-                    else kopiowanie(sciezkaZ,sciezkaD); //zwykłe kopiowanie
+                    kopiowanie_mmap(scZrodlowa,scDocelowa); //kopiowanie przez mapowanie
+                    else kopiowanie(scZrodlowa,scDocelowa); //zwykłe kopiowanie
                 }
                 break;
             case 1: //jesli ścieżka jest folderem
                 if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
                 {
-                    if (stat(sciezkaD,&filestatD) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    if (stat(scDocelowa,&filestatD) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
                     {
-                        mkdir(sciezkaD,filestatZ.st_mode); //utworz w katalogu docelowym folder
-                        rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                        mkdir(scDocelowa,filestatZ.st_mode); //utworz w katalogu docelowym folder
+                        rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
                     }
-                    else rekSynchro(sciezkaZ,sciezkaD,rekurencja,rozmiar);
+                    else rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar);
                 }
                 break;
             default: break;
