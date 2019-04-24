@@ -401,7 +401,7 @@ int main(int argc,char** argv)
         return -1;
     }
 
-    double czas=5;//*60;
+    double czas=5*60;
     double rozmiarDzielacyPliki=200;
     bool rekurencja = false;
     int c;
@@ -464,7 +464,7 @@ int main(int argc,char** argv)
                 rekSynchro(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
                 rekSynchroUsuwanie(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
             }    
-            sleep(60);    
+            sleep(czas);    
         }
         
     }
@@ -522,7 +522,7 @@ int main(int argc,char** argv)
                     {
                         if(strcmp(plikiZr->nazwaPliku,plikiDoc->nazwaPliku)==0)
                         {
-                            if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)!=0)
+                            if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)<0)
                             {
                                 char sc1[50];
                                 char sc2[50];
@@ -578,7 +578,7 @@ int main(int argc,char** argv)
             } 
             syslog (LOG_NOTICE, "Demon działa – synchronizuje");
         }
-        sleep(60);
+        sleep(czas);
     }
     closelog();
 }
