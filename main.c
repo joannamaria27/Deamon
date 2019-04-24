@@ -99,6 +99,12 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     close(plikD);
 }
 
+int czyKatalog(const char *path) {
+   struct stat statbuf;
+   if (stat(path, &statbuf) != 0)
+       return 0;
+   return S_ISDIR(statbuf.st_mode);
+}
 
 int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
 {
@@ -158,15 +164,6 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
     closedir(plikZ);
     free(plik);
     return 0;
-}
-
-int CzyKatalog(char* path)
-{
-    struct stat info;       
-    if((stat(path, &info)) < 0)
-        return -1;
-    else 
-        return info.st_mode;
 }
 
 typedef struct Pliki
@@ -349,7 +346,6 @@ int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int
     return 0;
 }
 
-volatile int sygnal = 1; //czy potrzebne
 void handler(int signum)
     {
         syslog(LOG_INFO,"Demon został obudzony po odebraniu sygnału");
@@ -376,19 +372,19 @@ int main(int argc,char** argv)
         syslog(LOG_INFO,"Za dużo argumentów");
         return -1;
     }
-     if((CzyKatalog(sciezkaDocelowa)==1) && (CzyKatalog(sciezkaZrodlowa)==1))
+     if((CzyKatalog(sciezkaDocelowa)!=1) && (CzyKatalog(sciezkaZrodlowa)!=1))
     {
         printf("Scieżka zródłowa i docelowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka zródłowa i docelowa nie jest katalogiem");
         return -1;
     }
-    if(CzyKatalog(sciezkaZrodlowa)==1)
+    if(CzyKatalog(sciezkaZrodlowa)!=1)
     {
         printf("Scieżka źródłowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka źródłowa nie jest katalogiem");
         return -1;
     }
-    if(CzyKatalog(sciezkaDocelowa)==1)
+    if(CzyKatalog(sciezkaDocelowa)!=1)
     {
         printf("Scieżka docelowa nie jest katalogiem\n");
         syslog(LOG_INFO,"Scieżka docelowa nie jest katalogiem");
