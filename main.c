@@ -282,6 +282,16 @@ void dodawaniePlikow(char * argument, Pliki * pliki)
     } 
 }
 
+static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+{
+    if(remove(pathname) < 0)
+    {
+        perror("ERROR: remove");
+        return -1;
+    }
+    return 0;
+}
+
 
 int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
 {
