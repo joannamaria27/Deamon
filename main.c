@@ -32,7 +32,7 @@ int typPliku(struct stat filestat)
 void kopiowanie(char * plikZrodlowy, char * plikDocelowy)
 {
     int plikZ = open(plikZrodlowy,O_RDONLY); 
-    int plikD = open(plikDocelowy, O_CREAT |O_TRUNC| O_RDWR  ,777);
+    int plikD = open(plikDocelowy, O_CREAT |O_TRUNC| O_RDWR,0666);
 	if(plikZ<0)
 	{
 	    fprintf (stderr, "error: %s\n", strerror (errno));
@@ -58,38 +58,20 @@ void kopiowanie_mmap(char *sciezkaZ, char *sciezkaD){
     
     int plikZ, plikD;
     char *zr, *doc;
-    //struct stat s;
     size_t rozmiarPliku;
 
-    /* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset);
-    start - określa adres, w którym chcemy widzieć odwzorowanie pliku. Nie jest wymagane i nie zawsze jest przestrzegane
-    przez system operacyjny.
-    length - liczba bajtów jaką chcemy odwzorować w pamięci.
-    prot - flagi określające uprawnienia jakie chcemy nadać obszarowi pamięci, np. tylko do odczytu, etc.
-    flags - dodatkowe flagi określające sposób działania wywołania mmap.
-    fd - deskryptor pliku, który chcemy odwzorować w pamięci.
-    offset - liczba określająca od którego miejsca w pliku chcemy rozpocząć odwzorowywanie.*/
-
     plikZ = open(sciezkaZ, O_RDONLY);
-    
     if(sciezkaZ<0)
 	{
 	    fprintf (stderr, "error: %s\n", strerror (errno));
 	    exit(1);
    	}
-    rozmiarPliku = lseek(plikZ, 0, SEEK_END); //////zmi
+    rozmiarPliku = lseek(plikZ, 0, SEEK_END); 
     zr = mmap(NULL, rozmiarPliku, PROT_READ, MAP_PRIVATE, plikZ, 0);
 
     plikD = open(sciezkaD, O_RDWR | O_CREAT, 777);
     ftruncate(plikD, rozmiarPliku);
     doc = mmap(NULL, rozmiarPliku, PROT_READ | PROT_WRITE, MAP_SHARED, plikD, 0);
-
-    /*mmap, munmap - mapowanie lub usunięcie mapowania plików lub urządzeń w pamięci
-    memcpy (void* dest, const void* src, size_t size);
-    dest - wskaźnik do obiektu docelowego.
-    src - wskaźnik do obiektu źródłowego.
-    size - liczba bajtów do skopiowania.
-    munmap(void *start, size_t length);*/
 
     memcpy(doc, zr, rozmiarPliku);
     munmap(zr, rozmiarPliku);
@@ -173,29 +155,29 @@ void zmianaDaty(char *plikZ, char *plikD)
 {
 
     struct stat filestat;
-    struct utimbuf nowa_data; // to specify new access and modification times for a file
+    struct utimbuf nowa_data;
     
     stat(plikZ, &filestat);
     nowa_data.modtime = filestat.st_mtime;
     nowa_data.actime = filestat.st_atime;
     
-    utime(plikD, &nowa_data);   // zmienia czas dostepu i modyfikacji pliku
+    utime(plikD, &nowa_data);   
     chmod(plikD, filestat.st_mode);
 }
 
 void dodawaniePlikow(char * argument, Pliki * pliki)
 {
-    struct dirent *plik; //wskazuje na element w katalogu; przechowuje rózne informacje
-    DIR * sciezka; //reprezentuje strumień sciezki
+    struct dirent *plik; 
+    DIR * sciezka; 
 
     char sc[50];
     char t[100];
     char * ar1;
     float rozmiar;
 
-    if((sciezka = opendir (argument))!=NULL) //otwiera strumień do katalogu
+    if((sciezka = opendir (argument))!=NULL) 
     {        
-        while((plik = readdir (sciezka))!=NULL)  //zwraca wskaznik do struktury reprez. plik
+        while((plik = readdir (sciezka))!=NULL)  
         {
             strcpy(sc,argument);
             strcat(sc,"/");
@@ -214,7 +196,7 @@ void dodawaniePlikow(char * argument, Pliki * pliki)
             }
             
         }
-        closedir(sciezka); //zamyka strumien sciezki
+        closedir(sciezka); 
     }
     else
     {
@@ -262,24 +244,24 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
         stat(scZrodlowa,&filestatZ);
         stat(scDocelowa,&filestatD);
         
-        switch (typPliku(filestatZ)) //sprawdzamy czym jest ścieżka
+        switch (typPliku(filestatZ))
         {
-            case 0: //jeśli ścieżka jest zwykłym plikiem
-                if(filestatZ.st_mtime > filestatD.st_mtime) //jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
+            case 0:
+                if(filestatZ.st_mtime != filestatD.st_mtime) 
                 {
-                    if (filestatZ.st_size >= rozmiar) //jeśli rozmiar pliku przekracza zadany rozmiar
-                    kopiowanie_mmap(scZrodlowa,scDocelowa); //kopiowanie przez mapowanie
-                    else kopiowanie(scZrodlowa,scDocelowa); //zwykłe kopiowanie
+                    if (filestatZ.st_size >= rozmiar) 
+                    kopiowanie_mmap(scZrodlowa,scDocelowa); 
+                    else kopiowanie(scZrodlowa,scDocelowa); 
                 }
                 break;
-            case 1: //jesli ścieżka jest folderem
-                if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
+            case 1: 
+                if (rekurencja == true) 
                 {
-                    if (stat(scDocelowa,&filestatD) == -1) //jeśli w katalogu docelowym brak folderu z katalogu źródłowego
+                    if (stat(scDocelowa,&filestatD) == -1) 
                     {
-                        mkdir(scDocelowa,filestatZ.st_mode); //utworz w katalogu docelowym folder
+                        mkdir(scDocelowa,filestatZ.st_mode); 
                         syslog(LOG_INFO,"stworzono katalog: %s",scDocelowa);
-                        rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar); //przekopiuj do niego pliki z folderu z katalogu źródłowego
+                        rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar); 
                     }
                     else rekSynchro(scZrodlowa,scDocelowa,rekurencja,rozmiar);
                 }
@@ -293,7 +275,7 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
     return 0;
 }
 
-int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar)
+int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja)
 {
     struct dirent *plik;
     struct stat filestatZ;
@@ -323,28 +305,34 @@ int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int
         stat(scDocelowa,&filestatD);
         
 
-        switch (typPliku(filestatD)) //sprawdzamy czym jest ścieżka
+        switch (typPliku(filestatD)) 
         {
-            case 0: //jeśli ścieżka jest zwykłym plikiem
-                if( (filestatZ.st_mtime > filestatD.st_mtime) || (stat(scZrodlowa,&filestatD) == -1) )//jeśli data modyfikacji pliku w katalogu źródłowym jest późniejsza
+            case 0: 
+                if(stat(scZrodlowa,&filestatD) == -1)
                 {
                     remove(scDocelowa);
                     syslog(LOG_INFO,"plik %s został usuniety",scDocelowa);
-
+                    
                 }
                 break;
-            case 1: //jesli ścieżka jest folderem
-                if (rekurencja == true) //jeśli użytkownik wybral rekurencyjną synchronizacje
+            case 1: 
+                if (rekurencja == true)
                 {
                     if (stat(scZrodlowa,&filestatD) == -1)
-                    { //jeśli w katalogu zr brak folderu z katalogu doc
+                    {
                            if (nftw(scDocelowa, rmFiles, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) < 0)
                         {
-                            perror("ERROR: ntfw");
+                            printf("nie ma katalogu do usuniecia\n");
                             exit(1);
                         }
                         syslog(LOG_INFO,"katalog %s został usuniety",scDocelowa);
+                        rekSynchroUsuwanie(scZrodlowa,scDocelowa,true);
                     }
+                    else
+                    {
+                        rekSynchroUsuwanie(scZrodlowa,scDocelowa,true);
+                    }
+                    
                 }
                 break;
             default: break;
@@ -355,6 +343,7 @@ int rekSynchroUsuwanie(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int
     free(plik);
     return 0;
 }
+
 
 void handler(int signum)
     {
@@ -414,12 +403,10 @@ int main(int argc,char** argv)
                 case 't':
                 case 'T': //time – czas
                     czas=atof(optarg);
-                    printf("%f \n",czas);  
                     break;
                 case 's': 
                 case 'S': //size – rozmiar
                     rozmiarDzielacyPliki=atof(optarg);
-                    printf("%f \n",rozmiarDzielacyPliki);
                     break;
                 case 'r':
                 case 'R': //rekurencja
@@ -429,19 +416,20 @@ int main(int argc,char** argv)
                 printf("nieprawidłowe argumenty!");
                 exit(1);
             }
-                
         }
-        
     }
-   
+    
     syslog (LOG_NOTICE, "Demon śpi");
+    syslog (LOG_INFO, "Demon zostanie obudzony po %.2f sekundach",czas);
+   
+    signal(SIGUSR1, handler);
     sleep(czas);
-    syslog (LOG_INFO, "Demon został obudzony po %.2f sekundach",czas);
 
     Pliki *plikiZr;
     Pliki *plikiDoc;
-    plikiZr=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
-    plikiDoc=(Pliki*)calloc(1,sizeof(Pliki)); //pierwszy el zawsze pusty
+
+    plikiZr=(Pliki*)calloc(1,sizeof(Pliki)); 
+    plikiDoc=(Pliki*)calloc(1,sizeof(Pliki)); 
 
     dodawaniePlikow(sciezkaZrodlowa, plikiZr);
     dodawaniePlikow(sciezkaDocelowa, plikiDoc);
@@ -450,19 +438,26 @@ int main(int argc,char** argv)
     // wypiszListe(plikiZr);
     // printf("-------------------------------------------------\n");
     // wypiszListe(plikiDoc);
-
-    signal(SIGUSR1, handler);
-
+    syslog (LOG_INFO, "Demon obudził się");
     if(rekurencja==1)
     {
         while (1)
         {
+            pid_t pid;
+            pid = fork();
+            if (pid < 0) {
+                exit(EXIT_FAILURE);
+            }
+            if (pid > 0) {
+                exit(EXIT_SUCCESS);
+            }
+
             pid_t r;
             r=fork();
             if(r==0)
             {
                 rekSynchro(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
-                rekSynchroUsuwanie(sciezkaZrodlowa,sciezkaDocelowa,rekurencja,rozmiarDzielacyPliki);
+                rekSynchroUsuwanie(sciezkaZrodlowa,sciezkaDocelowa,rekurencja);
             }    
             sleep(czas);    
         }
@@ -470,6 +465,15 @@ int main(int argc,char** argv)
     }
     while(1)
     {
+        pid_t pidd;
+        pidd = fork();
+        if (pidd < 0) {
+                exit(EXIT_FAILURE);
+        }
+        if (pidd > 0) {
+                exit(EXIT_SUCCESS);
+        }
+
         pid_t p;
         p=fork();
         if(p==0)
@@ -522,7 +526,7 @@ int main(int argc,char** argv)
                     {
                         if(strcmp(plikiZr->nazwaPliku,plikiDoc->nazwaPliku)==0)
                         {
-                            if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)<0)
+                            if(strcmp(plikiZr->dataPliku,plikiDoc->dataPliku)!=0)
                             {
                                 char sc1[50];
                                 char sc2[50];
@@ -549,13 +553,11 @@ int main(int argc,char** argv)
                                     kopiowanie(sc1,sc2);
                                     zmianaDaty(sc1,sc2);
                                 }
-                            }
-                        // continue;                        
+                            }                                               
                         }
                         plikiDoc=plikiDoc->nastepny;
                     
-                    }
-                
+                    }                
                 }         
                 plikiZr=plikiZr->nastepny;
             }
@@ -582,3 +584,4 @@ int main(int argc,char** argv)
     }
     closelog();
 }
+
