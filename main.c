@@ -247,12 +247,19 @@ int rekSynchro(char *sciezkaZ, char *sciezkaD, bool rekurencja, long int rozmiar
         switch (typPliku(filestatZ))
         {
             case 0:
-                if(filestatZ.st_mtime != filestatD.st_mtime) 
+                if(filestatZ.st_mtime > filestatD.st_mtime) 
                 {
                     if (filestatZ.st_size >= rozmiar) 
-                    kopiowanie_mmap(scZrodlowa,scDocelowa); 
-                    else kopiowanie(scZrodlowa,scDocelowa); 
-                }
+                    {
+                        kopiowanie_mmap(scZrodlowa,scDocelowa); 
+                        zmianaDaty(scZrodlowa,scDocelowa); 
+                    }
+                    else 
+                    {
+                        kopiowanie(scZrodlowa,scDocelowa); 
+                        zmianaDaty(scZrodlowa,scDocelowa); 
+                    }
+                }            
                 break;
             case 1: 
                 if (rekurencja == true) 
